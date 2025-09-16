@@ -14,9 +14,9 @@ import { AppService } from './app.service';
     ConfigModule.forRoot(),
     CacheModule.registerAsync({
       useFactory: (configService: ConfigService) => {
-        const redisUrl = configService.get<string>('REDIS_URL');
+        const redisUrl = configService.get<string>('REDISCLOUD_URL');
         if (!redisUrl) {
-          throw new Error('REDIS_URL is not defined');
+          throw new Error('REDISCLOUD_URL is not defined');
         }
         const isConnectionTls = redisUrl?.startsWith('rediss://');
         const redisUrlObject = new URL(redisUrl);
