@@ -87,6 +87,8 @@ import { AppService } from './app.service';
           port: redisUrlObject.port ? parseInt(redisUrlObject.port, 10) : 6379,
           name: 'bull',
           db: 1,
+          username: redisUrlObject.username ?? undefined,
+          password: redisUrlObject.password ?? undefined,
         };
 
         if (isConnectionTls) {
