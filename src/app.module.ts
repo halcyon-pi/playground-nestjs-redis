@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import Bull from 'bull';
 import Keyv, { KeyvOptions } from 'keyv';
 import { CacheService } from 'src/cache.service';
 import { QueueModule } from 'src/queue.module';
@@ -74,47 +75,38 @@ import { AppService } from './app.service';
       imports: [ConfigModule],
     }),
     BullModule.forRootAsync({
-      useFactory: (configService: ConfigService) => {
+      useFactory: (configService: ConfigService): Bull.QueueOptions => {
         const redisUrl = configService.get<string>('REDISCLOUD_URL');
         if (!redisUrl) {
           throw new Error('REDISCLOUD_URL is not defined');
         }
         const isConnectionTls = redisUrl?.startsWith('rediss://');
         const redisUrlObject = new URL(redisUrl);
-        if (isConnectionTls) {
-          return {
-            redis: {
-              host: redisUrlObject.hostname,
-              port: redisUrlObject.port
-                ? parseInt(redisUrlObject.port, 10)
-                : 6379,
-              password: redisUrlObject.password ?? undefined,
-              username: redisUrlObject.username ?? undefined,
-              db: 0,
-              tls: {
-                // Enable TLS connection
-                rejectUnauthorized: false, // Ignore self-signed certificate errors (for testing)
+        const bullRedisOptions: Bull.QueueOptions['redis'] = {
+          host: redisUrlObject.hostname,
+          port: redisUrlObject.port ? parseInt(redisUrlObject.port, 10) : 6379,
+          name: 'bull',
+          db: 1,
+        };
 
-                // Alternatively, provide CA, key, and cert for mutual authentication
-                // ca: fs.readFileSync('/path/to/ca-cert.pem'),
-                // cert: fs.readFileSync('/path/to/client-cert.pem'), // Optional for client auth
-                // key: fs.readFileSync('/path/to/client-key.pem'), // Optional for client auth
-              },
-            },
+        if (isConnectionTls) {
+          bullRedisOptions.tls = {
+            rejectUnauthorized: false, // Ignore self-signed certificate errors (for testing)
           };
         }
-        // Non-TLS connection
+
         return {
-          redis: {
-            host: redisUrlObject.hostname,
-            port: redisUrlObject.port
-              ? parseInt(redisUrlObject.port, 10)
-              : 6379,
-            name: 'bull',
-            db: 1,
+          redis: bullRedisOptions,
+          defaultJobOptions: {
+            removeOnComplete: true,
+          },
+          settings: {
+            maxStalledCount: 1,
           },
         };
       },
+      inject: [ConfigService],
+      imports: [ConfigModule],
     }),
     QueueModule,
   ],
