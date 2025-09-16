@@ -1,12 +1,9 @@
 import KeyvRedis, { KeyvRedisOptions, RedisClientOptions } from '@keyv/redis';
-import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import Bull from 'bull';
 import Keyv, { KeyvOptions } from 'keyv';
 import { CacheService } from 'src/cache.service';
-import { QueueModule } from 'src/queue.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -74,43 +71,43 @@ import { AppService } from './app.service';
       inject: [ConfigService],
       imports: [ConfigModule],
     }),
-    BullModule.forRootAsync({
-      useFactory: (configService: ConfigService): Bull.QueueOptions => {
-        const redisUrl = configService.get<string>('REDISCLOUD_URL');
-        if (!redisUrl) {
-          throw new Error('REDISCLOUD_URL is not defined');
-        }
-        const isConnectionTls = redisUrl?.startsWith('rediss://');
-        const redisUrlObject = new URL(redisUrl);
-        const bullRedisOptions: Bull.QueueOptions['redis'] = {
-          host: redisUrlObject.hostname,
-          port: redisUrlObject.port ? parseInt(redisUrlObject.port, 10) : 6379,
-          name: 'bull',
-          db: 1,
-          username: redisUrlObject.username ?? undefined,
-          password: redisUrlObject.password ?? undefined,
-        };
+    // BullModule.forRootAsync({
+    //   useFactory: (configService: ConfigService): Bull.QueueOptions => {
+    //     const redisUrl = configService.get<string>('REDISCLOUD_URL');
+    //     if (!redisUrl) {
+    //       throw new Error('REDISCLOUD_URL is not defined');
+    //     }
+    //     const isConnectionTls = redisUrl?.startsWith('rediss://');
+    //     const redisUrlObject = new URL(redisUrl);
+    //     const bullRedisOptions: Bull.QueueOptions['redis'] = {
+    //       host: redisUrlObject.hostname,
+    //       port: redisUrlObject.port ? parseInt(redisUrlObject.port, 10) : 6379,
+    //       name: 'bull',
+    //       db: 1,
+    //       username: redisUrlObject.username ?? undefined,
+    //       password: redisUrlObject.password ?? undefined,
+    //     };
 
-        if (isConnectionTls) {
-          bullRedisOptions.tls = {
-            rejectUnauthorized: false, // Ignore self-signed certificate errors (for testing)
-          };
-        }
+    //     if (isConnectionTls) {
+    //       bullRedisOptions.tls = {
+    //         rejectUnauthorized: false, // Ignore self-signed certificate errors (for testing)
+    //       };
+    //     }
 
-        return {
-          redis: bullRedisOptions,
-          defaultJobOptions: {
-            removeOnComplete: true,
-          },
-          settings: {
-            maxStalledCount: 1,
-          },
-        };
-      },
-      inject: [ConfigService],
-      imports: [ConfigModule],
-    }),
-    QueueModule,
+    //     return {
+    //       redis: bullRedisOptions,
+    //       defaultJobOptions: {
+    //         removeOnComplete: true,
+    //       },
+    //       settings: {
+    //         maxStalledCount: 1,
+    //       },
+    //     };
+    //   },
+    //   inject: [ConfigService],
+    //   imports: [ConfigModule],
+    // }),
+    // QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService, CacheService],
