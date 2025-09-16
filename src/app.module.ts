@@ -51,7 +51,9 @@ import { AppService } from './app.service';
           useUnlink: true,
           keyPrefixSeparator: ':',
         };
+        console.log('KeyvRedis', { clientOptions, keyvRedisOption });
         const store = new KeyvRedis(clientOptions, keyvRedisOption);
+
         store.on('error', (err) => {
           console.error('Keyv Redis connection error:', err);
         });
