@@ -51,12 +51,19 @@ import { AppService } from './app.service';
           useUnlink: true,
           keyPrefixSeparator: ':',
         };
+        const store = new KeyvRedis(clientOptions, keyvRedisOption);
+        store.on('error', (err) => {
+          console.error('Keyv Redis connection error:', err);
+        });
+        store.on('connect', () => {
+          console.log('Keyv Redis connected at ', redisUrl);
+        });
 
         return {
           stores: [
             new Keyv(
               {
-                store: new KeyvRedis(clientOptions, keyvRedisOption),
+                store,
               },
               keyvOptions,
             ),
@@ -66,12 +73,47 @@ import { AppService } from './app.service';
       inject: [ConfigService],
       imports: [ConfigModule],
     }),
-    BullModule.forRoot({
-      redis: {
-        host: 'localhost',
-        port: 6379,
-        name: 'bull',
-        db: 1,
+    BullModule.forRootAsync({
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDISCLOUD_URL');
+        if (!redisUrl) {
+          throw new Error('REDISCLOUD_URL is not defined');
+        }
+        const isConnectionTls = redisUrl?.startsWith('rediss://');
+        const redisUrlObject = new URL(redisUrl);
+        if (isConnectionTls) {
+          return {
+            redis: {
+              host: redisUrlObject.hostname,
+              port: redisUrlObject.port
+                ? parseInt(redisUrlObject.port, 10)
+                : 6379,
+              password: redisUrlObject.password ?? undefined,
+              username: redisUrlObject.username ?? undefined,
+              db: 0,
+              tls: {
+                // Enable TLS connection
+                rejectUnauthorized: false, // Ignore self-signed certificate errors (for testing)
+
+                // Alternatively, provide CA, key, and cert for mutual authentication
+                // ca: fs.readFileSync('/path/to/ca-cert.pem'),
+                // cert: fs.readFileSync('/path/to/client-cert.pem'), // Optional for client auth
+                // key: fs.readFileSync('/path/to/client-key.pem'), // Optional for client auth
+              },
+            },
+          };
+        }
+        // Non-TLS connection
+        return {
+          redis: {
+            host: redisUrlObject.hostname,
+            port: redisUrlObject.port
+              ? parseInt(redisUrlObject.port, 10)
+              : 6379,
+            name: 'bull',
+            db: 1,
+          },
+        };
       },
     }),
     QueueModule,
