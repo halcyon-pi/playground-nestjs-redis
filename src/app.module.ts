@@ -13,6 +13,8 @@ import { AppService } from './app.service';
     CacheModule.registerAsync({
       useFactory: (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDISCLOUD_URL');
+        console.log(`REDISCLOUD_URL: ${redisUrl}`);
+
         if (!redisUrl) {
           throw new Error('REDISCLOUD_URL is not defined');
         }
