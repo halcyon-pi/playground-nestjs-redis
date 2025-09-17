@@ -6,7 +6,9 @@ import {
   HttpException,
   Post,
 } from '@nestjs/common';
+import { AddJobDto } from 'src/add-job.request.dto';
 import { CacheService } from 'src/cache.service';
+import { QueueService } from 'src/queue.service';
 import { SetCacheDto } from 'src/set-cache.request.dto';
 import { AppService } from './app.service';
 
@@ -15,7 +17,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly cacheService: CacheService,
-    // private readonly queueService: QueueService,
+    private readonly queueService: QueueService,
   ) {}
 
   @Get()
@@ -33,9 +35,9 @@ export class AppController {
     return this.cacheService.add(body);
   }
 
-  // @Post('add-job')
-  // @HttpCode(201)
-  // async addJob(@Body() body: AddJobDto) {
-  //   return this.queueService.add({ name: body.name, data: body.data });
-  // }
+  @Post('add-job')
+  @HttpCode(201)
+  async addJob(@Body() body: AddJobDto) {
+    return this.queueService.add({ name: body.name, data: body.data });
+  }
 }
