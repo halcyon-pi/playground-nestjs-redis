@@ -21,6 +21,7 @@ import { AppService } from './app.service';
         const isConnectionTls = redisUrl?.startsWith('rediss://');
         const redisUrlObject = new URL(redisUrl);
         const clientOptions: RedisClientOptions = {
+          url: !isConnectionTls ? redisUrl : undefined, // Use full URL if not using TLS
           password: redisUrlObject.password ?? undefined,
           username: redisUrlObject.username ?? undefined,
           database: 0,
@@ -30,7 +31,7 @@ import { AppService } from './app.service';
                 port: redisUrlObject.port
                   ? parseInt(redisUrlObject.port, 10)
                   : undefined,
-                tls: isConnectionTls, // Enable TLS connection
+                tls: true, // Enable TLS connection
                 rejectUnauthorized: false, // Ignore self-signed certificate errors (for testing)
 
                 // Alternatively, provide CA, key, and cert for mutual authentication
